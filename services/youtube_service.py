@@ -7,6 +7,9 @@ def download_audio(youtube_url):
     output_dir = "downloads/"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
+    
+    # need to add a check in the case the url input has something like a youtube playlist in it.
+    # this could cause an unexpectedly large amount of files to download
 
     # youtube-dl options to download audio
     ydl_opts = {
