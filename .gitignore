@@ -1,1 +1,14 @@
-venv
+# Python-related files
+*.pyc
+__pycache__/
+
+# Virtual environment
+venv/
+
+# Environment variables
+.env
+
+# Other
+.idea/
+.vscode/
+.DS_Store
