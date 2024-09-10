@@ -1,6 +1,7 @@
 import os
 import logging
 from flask import Flask, request, jsonify
+from services.analyze_text_service import analyze_text
 from services.youtube_service import download_audio
 from services.google_transcription_service import transcribe_long_audio_google
 from dotenv import load_dotenv
@@ -35,8 +36,24 @@ def transcribe_google():
     try:
         transcript = transcribe_long_audio_google(bucket, audio_path)
         return jsonify({'transcript': transcript}), 200
+    
     except Exception as e:
-        app.logger.info("Error: " + str(e))  # Log an informational message
+        app.logger.info("error: " + str(e))
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/analyze', methods=['POST'])
+def download_transcribe_analysis():
+    transcript = request.json.get('transcript')
+    prompt = request.json.get('prompt')
+
+    try:
+        content = analyze_text(transcript, prompt)
+        app.logger.info("analysis: " + content)
+        return jsonify({'analysis': content}), 200
+    
+    except Exception as e:
+        app.logger.info("error: " + str(e))
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':

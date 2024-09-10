@@ -5,3 +5,4 @@ ffmpeg-python
 google-cloud-speech
 google-cloud-storage
 python-dotenv
+openai
