@@ -27,7 +27,7 @@ def analyze_text(transcript, user_prompt):
             ],
             model="gpt-3.5-turbo",
             )
-        logger.info(f"OpenAI response: {chat_completion.choices[0].message.content}")
+        # logger.info(f"OpenAI response: {chat_completion.choices[0].message.content}")
         return chat_completion.choices[0].message.content
 
     except Exception as e:

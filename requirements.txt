@@ -1,4 +1,6 @@
-Flask
+celery
+redis
+flask
 youtube-dl
 yt-dlp
 ffmpeg-python
@@ -6,3 +8,4 @@ google-cloud-speech
 google-cloud-storage
 python-dotenv
 openai
+flask-cors

@@ -27,13 +27,13 @@ def convert_mp3_to_wav(mp3_file_path):
         wav_file_path = mp3_file_path.replace(".mp3", ".wav")
         
         # Log the conversion start
-        logger.info(f"Converting {mp3_file_path} to {wav_file_path}...")
+        # logger.info(f"Converting {mp3_file_path} to {wav_file_path}...")
         
         # Run the ffmpeg conversion
         ffmpeg.input(mp3_file_path).output(wav_file_path, ac=1, ar=16000).run(overwrite_output=True)
         
         # Log success message
-        logger.info(f"Conversion successful: {mp3_file_path} -> {wav_file_path}")
+        # logger.info(f"Conversion successful: {mp3_file_path} -> {wav_file_path}")
         
         return wav_file_path
     
@@ -73,9 +73,9 @@ def transcribe_long_audio_google(bucket_name, audio_file):
     # Use LongRunningRecognize for audio longer than 1 minute
     operation = client.long_running_recognize(config=config, audio=audio)
 
-    print("Waiting for operation to complete...")
+    logger.info("Waiting for operation to complete...")
     response = operation.result(timeout=600)
-    logger.info(response)
+    # logger.info(response)
 
     transcript = ""
     for result in response.results:
