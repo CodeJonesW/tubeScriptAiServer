@@ -1,0 +1,8 @@
+start flask server 
+- python3 app.py
+
+start celery worker
+- celery -A tasks worker --loglevel=info
+
+venv
+- source venv/bin/activate
