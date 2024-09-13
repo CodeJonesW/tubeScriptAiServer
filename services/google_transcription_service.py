@@ -82,3 +82,16 @@ def transcribe_long_audio_google(bucket_name, audio_file):
         transcript += result.alternatives[0].transcript + "\n"
 
     return transcript
+
+
+def delete_gcs_file(bucket_name, file_path):
+    """Deletes a file from the GCP bucket."""
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(file_path)
+
+    blob.delete()
+
+    print(f"File {file_path} deleted from bucket {bucket_name}.")
+
+
