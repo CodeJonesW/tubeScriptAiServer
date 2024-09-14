@@ -3,7 +3,6 @@ import ffmpeg
 import os
 
 def download_audio(youtube_url):
-    # Directory where audio will be stored
     output_dir = "downloads/"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -11,7 +10,6 @@ def download_audio(youtube_url):
     # need to add a check in the case the url input has something like a youtube playlist in it.
     # this could cause an unexpectedly large amount of files to download
 
-    # youtube-dl options to download audio
     ydl_opts = {
         'format': 'bestaudio/best',
         'outtmpl': os.path.join(output_dir, '%(id)s.%(ext)s'),

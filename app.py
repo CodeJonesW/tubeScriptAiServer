@@ -8,6 +8,7 @@ from tasks import download_and_process
 
 load_dotenv()
 app = Flask(__name__)
+logger = logging.getLogger(__name__)
 
 app.config.update(
     CELERY_BROKER_URL=os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0'),
@@ -37,9 +38,7 @@ def process_video():
 @app.route('/status/<task_id>')
 def task_status(task_id):
     task = download_and_process.AsyncResult(task_id)
-    print('Task :', task)
-    print('Task State:', task.state)
-    print('Task Info:', task.info)
+    logger.info(f'Task: {task}\nTask State: {task.state}\nTask Info: {task.info}')
     
     if task.state == 'PENDING':
         response = {

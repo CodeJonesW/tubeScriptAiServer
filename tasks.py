@@ -5,14 +5,15 @@ from services.google_transcription_service import delete_gcs_file, transcribe_lo
 from google.cloud import storage
 from services.analyze_text_service import analyze_text
 import os
+import logging
 
 celery = Celery('tasks', broker='redis://localhost:6379/0')
+logger = logging.getLogger(__name__)
 
 @celery.task(bind=True)
 def download_and_process(self, url, prompt):
     """Handles downloading, transcribing, and analyzing the video asynchronously."""
     try:
-        print('Downloading and processing video...')
         self.update_state(state='PROGRESS', meta={'status': 'Downloading video'})
         audio_path = download_audio(url)
 
@@ -39,27 +40,27 @@ def download_and_process(self, url, prompt):
 
 @task_success.connect
 def task_success_handler(sender=None, result=None, **kwargs):
-    print(f"Task {sender.name} completed successfully with result: {result}")
+    logger.info(f"Task {sender.name} completed successfully with result: {result}")
     try:
         bucket = os.getenv('GCP_SPEECH_TO_TEXT_PROCESSING_BUCKET')
         file_path = result['result']['file_path']
         audio_chunks = result['result'].get('audio_chunks', [])
         # Delete the original MP3 and WAV files locally
         if file_path:
-            print('Cleaning up local files after task success...')
+            logger.info('Cleaning up local files after task success...')
             wav_file = file_path.replace('.mp3', '.wav')
             if os.path.exists(file_path):
                 os.remove(file_path)
-                print(f"Deleted local MP3: {file_path}")
+                logger.info(f"Deleted local MP3: {file_path}")
             if os.path.exists(wav_file):
                 os.remove(wav_file)
-                print(f"Deleted local WAV: {wav_file}")
+                logger.info(f"Deleted local WAV: {wav_file}")
 
         # Delete chunk files locally
         for chunk in audio_chunks:
             if os.path.exists(chunk):
                 os.remove(chunk)
-                print(f"Deleted local chunk: {chunk}")
+                logger.info(f"Deleted local chunk: {chunk}")
 
         # Clean up GCS
         if bucket:
@@ -68,11 +69,11 @@ def task_success_handler(sender=None, result=None, **kwargs):
                 delete_gcs_file(bucket, chunk_name)
 
     except Exception as e:
-        print(f"Error during cleanup: {str(e)}")
+        logger.error(f"Error during cleanup: {str(e)}")
 
 @task_failure.connect
 def task_failure_handler(sender=None, task_id=None, exception=None, args=None, kwargs=None, traceback=None, einfo=None, **other_kwargs):
-    print(f"Task {sender.name} failed with exception: {exception}")
+    logger.error(f"Task {sender.name} failed with exception: {exception}")
     try:
         bucket = os.getenv('GCP_SPEECH_TO_TEXT_PROCESSING_BUCKET')
         file_path = kwargs.get('file_path')
@@ -80,20 +81,20 @@ def task_failure_handler(sender=None, task_id=None, exception=None, args=None, k
 
         # Clean up locally
         if file_path:
-            print('Cleaning up local files after task failure...')
+            logger.info('Cleaning up local files after task failure...')
             wav_file = file_path.replace('.mp3', '.wav')
             if os.path.exists(file_path):
                 os.remove(file_path)
-                print(f"Deleted local MP3: {file_path}")
+                logger.info(f"Deleted local MP3: {file_path}")
             if os.path.exists(wav_file):
                 os.remove(wav_file)
-                print(f"Deleted local WAV: {wav_file}")
+                logger.info(f"Deleted local WAV: {wav_file}")
 
         # Delete chunk files locally
         for chunk in audio_chunks:
             if os.path.exists(chunk):
                 os.remove(chunk)
-                print(f"Deleted local chunk: {chunk}")
+                logger.info(f"Deleted local chunk: {chunk}")
 
         # Clean up GCS
         if bucket:
@@ -102,4 +103,4 @@ def task_failure_handler(sender=None, task_id=None, exception=None, args=None, k
                 delete_gcs_file(bucket, chunk_name)
 
     except Exception as e:
-        print(f"Error during cleanup: {str(e)}")
+        logger.error(f"Error during cleanup: {str(e)}")

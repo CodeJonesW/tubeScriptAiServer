@@ -23,7 +23,6 @@ class TestTaskHandler(unittest.TestCase):
 
         # Call the task_success_handler with the mocked sender and result
         task_success_handler(sender=mock_sender, result=result)
-        print('calls:', mock_os_remove.mock_calls)
 
         # Ensure that local files are deleted
         mock_os_remove.assert_has_calls([
