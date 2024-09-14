@@ -15,53 +15,91 @@ def download_and_process(self, url, prompt):
         print('Downloading and processing video...')
         self.update_state(state='PROGRESS', meta={'status': 'Downloading video'})
         audio_path = download_audio(url)
-        print('Downloaded audio file:', audio_path)
 
         self.update_state(state='PROGRESS', meta={'status': 'Transcribing audio'})
         bucket = os.getenv('GCP_SPEECH_TO_TEXT_PROCESSING_BUCKET')
-        transcript = transcribe_long_audio_google(bucket, audio_path)
-        print('Transcript:', transcript)
+        transcript, audio_chunks = transcribe_long_audio_google(bucket, audio_path)
 
         self.update_state(state='PROGRESS', meta={'status': 'Analyzing transcript'})
         analysis = analyze_text(transcript, prompt)
-        print('Analysis:', analysis)
 
-        return {'status': 'Completed', 'result': {'transcript': transcript, 'analysis': analysis, 'file_path': audio_path}}
+        return {
+            'status': 'Completed',
+            'result': {
+                'transcript': transcript,
+                'analysis': analysis,
+                'file_path': audio_path,
+                'audio_chunks': audio_chunks  # Include chunk paths for cleanup
+            }
+        }
 
     except Exception as e:
         raise self.retry(exc=e)
 
 
-# Signal to handle task success
 @task_success.connect
 def task_success_handler(sender=None, result=None, **kwargs):
     print(f"Task {sender.name} completed successfully with result: {result}")
     try:
         bucket = os.getenv('GCP_SPEECH_TO_TEXT_PROCESSING_BUCKET')
         file_path = result['result']['file_path']
-
+        audio_chunks = result['result'].get('audio_chunks', [])
+        # Delete the original MP3 and WAV files locally
         if file_path:
-            print('Deleting file locally...')
+            print('Cleaning up local files after task success...')
             wav_file = file_path.replace('.mp3', '.wav')
-            os.remove(file_path)
-            os.remove(wav_file)
-    
-        if bucket and file_path:
-            delete_gcs_file(bucket, wav_file.split('/')[-1])
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                print(f"Deleted local MP3: {file_path}")
+            if os.path.exists(wav_file):
+                os.remove(wav_file)
+                print(f"Deleted local WAV: {wav_file}")
+
+        # Delete chunk files locally
+        for chunk in audio_chunks:
+            if os.path.exists(chunk):
+                os.remove(chunk)
+                print(f"Deleted local chunk: {chunk}")
+
+        # Clean up GCS
+        if bucket:
+            for chunk in audio_chunks:
+                chunk_name = chunk.split('/')[-1]
+                delete_gcs_file(bucket, chunk_name)
 
     except Exception as e:
         print(f"Error during cleanup: {str(e)}")
 
-# Signal to handle task failure
 @task_failure.connect
 def task_failure_handler(sender=None, task_id=None, exception=None, args=None, kwargs=None, traceback=None, einfo=None, **other_kwargs):
     print(f"Task {sender.name} failed with exception: {exception}")
+    try:
+        bucket = os.getenv('GCP_SPEECH_TO_TEXT_PROCESSING_BUCKET')
+        file_path = kwargs.get('file_path')
+        audio_chunks = kwargs.get('audio_chunks', [])
 
-    # # Assuming that 'url' and 'prompt' are passed in kwargs, and you can extract the file path
-    # # based on the URL provided. This can vary based on your logic.
-    # bucket = os.getenv('GCP_SPEECH_TO_TEXT_PROCESSING_BUCKET')
-    # file_path = kwargs.get('file_path')
+        # Clean up locally
+        if file_path:
+            print('Cleaning up local files after task failure...')
+            wav_file = file_path.replace('.mp3', '.wav')
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                print(f"Deleted local MP3: {file_path}")
+            if os.path.exists(wav_file):
+                os.remove(wav_file)
+                print(f"Deleted local WAV: {wav_file}")
 
-    # # Perform the GCS file deletion in case of failure (optional)
-    # if bucket_name and file_path:
-    #     delete_gcs_file(bucket_name, file_path)
+        # Delete chunk files locally
+        for chunk in audio_chunks:
+            if os.path.exists(chunk):
+                os.remove(chunk)
+                print(f"Deleted local chunk: {chunk}")
+
+        # Clean up GCS
+        if bucket:
+            for chunk in audio_chunks:
+                chunk_name = chunk.split('/')[-1]
+                delete_gcs_file(bucket, chunk_name)
+
+    except Exception as e:
+        print(f"Error during cleanup: {str(e)}")

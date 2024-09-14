@@ -6,3 +6,6 @@ start celery worker
 
 venv
 - source venv/bin/activate
+
+tests
+- python run_tests.py
