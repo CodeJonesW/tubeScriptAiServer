@@ -7,11 +7,9 @@ def download_audio(youtube_url):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     
-    # need to add a check in the case the url input has something like a youtube playlist in it.
-    # this could cause an unexpectedly large amount of files to download
-
     ydl_opts = {
         'format': 'bestaudio/best',
+        'noplaylist': True,
         'outtmpl': os.path.join(output_dir, '%(id)s.%(ext)s'),
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',

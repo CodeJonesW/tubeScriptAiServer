@@ -16,7 +16,10 @@ def download_and_process(self, url, prompt):
     """Handles downloading, transcribing, and analyzing the video asynchronously."""
     try:
         self.update_state(state='PROGRESS', meta={'status': 'Downloading video'})
-        audio_path = download_audio(url)
+        try:
+            audio_path = download_audio(url)
+        except Exception as e:
+            raise Exception(f"Error downloading audio: {str(e)}")
 
         self.update_state(state='PROGRESS', meta={'status': 'Transcribing audio'})
         
