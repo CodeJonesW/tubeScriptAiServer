@@ -1,5 +1,6 @@
 import os
 import logging
+import asyncio
 from google.cloud import speech, storage
 import ffmpeg
 from concurrent.futures import ThreadPoolExecutor
@@ -10,7 +11,10 @@ logger = logging.getLogger(__name__)
 # Set environment variable for Google credentials
 os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 
-def split_audio_into_chunks(input_audio_file, chunk_length=60):
+# ThreadPoolExecutor for running blocking IO operations
+executor = ThreadPoolExecutor(max_workers=32)
+
+def split_audio_into_chunks(input_audio_file, chunk_length=30):
     """Split the audio file into chunks of specified length (in seconds)."""
     probe = ffmpeg.probe(input_audio_file)
     duration = float(probe['format']['duration'])
@@ -31,41 +35,51 @@ def split_audio_into_chunks(input_audio_file, chunk_length=60):
 
     return chunk_files
 
-def transcribe_audio_chunk(bucket_name, audio_chunk):
-    """Transcribe a single audio chunk."""
+async def transcribe_audio_chunk(audio_chunk):
+    """Asynchronously transcribe a single audio chunk."""
     client = speech.SpeechClient()
 
-    gcs_uri = upload_to_gcs(bucket_name, audio_chunk)
+    # Read the audio chunk file as binary content
+    with open(audio_chunk, "rb") as audio_file:
+        audio_content = audio_file.read()
 
-    audio = speech.RecognitionAudio(uri=gcs_uri)
+    audio = speech.RecognitionAudio(content=audio_content)
     config = speech.RecognitionConfig(
         encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
         sample_rate_hertz=16000,
         language_code="en-US"
     )
 
-    operation = client.long_running_recognize(config=config, audio=audio)
-    response = operation.result(timeout=600)
-
+    # Synchronous transcription offloaded to thread pool
+    response = await asyncio.get_event_loop().run_in_executor(
+        executor, lambda: client.recognize(config=config, audio=audio)
+    )
     transcript = ""
     for result in response.results:
         transcript += result.alternatives[0].transcript + "\n"
 
     return transcript
 
-def transcribe_long_audio_google(bucket_name, audio_file, chunk_length=60):
-    """Transcribe long audio by splitting into chunks and transcribing each."""
+async def transcribe_audio_google(bucket_name, audio_file, chunk_length=30):
+    """Asynchronously transcribe long audio by splitting into chunks and transcribing each."""
+    # Convert MP3 to WAV
     wav_file = convert_mp3_to_wav(audio_file)
 
+    # Split the WAV file into smaller chunks
     audio_chunks = split_audio_into_chunks(wav_file, chunk_length)
 
+    # Asynchronously transcribe each chunk
     transcript = ""
-    with ThreadPoolExecutor(max_workers=4) as executor:
-        futures = [executor.submit(transcribe_audio_chunk, bucket_name, chunk) for chunk in audio_chunks]
-        for future in futures:
-            transcript += future.result()
+    tasks = [transcribe_audio_chunk(chunk) for chunk in audio_chunks]
+    
+    # Gather results asynchronously
+    results = await asyncio.gather(*tasks)
 
-    return transcript, audio_chunks 
+    # Combine all transcriptions
+    for result in results:
+        transcript += result
+
+    return transcript, audio_chunks
 
 def upload_to_gcs(bucket_name, audio_file):
     """Upload the audio file to Google Cloud Storage."""

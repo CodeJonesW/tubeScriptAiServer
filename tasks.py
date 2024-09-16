@@ -1,11 +1,12 @@
 from celery import Celery
 from celery.signals import task_success, task_failure
 from services.youtube_service import download_audio
-from services.google_transcription_service import delete_gcs_file, transcribe_long_audio_google
+from services.google_transcription_service import delete_gcs_file, transcribe_audio_google
 from google.cloud import storage
 from services.analyze_text_service import analyze_text
 import os
 import logging
+import asyncio
 
 celery = Celery('tasks', broker='redis://localhost:6379/0')
 logger = logging.getLogger(__name__)
@@ -18,8 +19,8 @@ def download_and_process(self, url, prompt):
         audio_path = download_audio(url)
 
         self.update_state(state='PROGRESS', meta={'status': 'Transcribing audio'})
-        bucket = os.getenv('GCP_SPEECH_TO_TEXT_PROCESSING_BUCKET')
-        transcript, audio_chunks = transcribe_long_audio_google(bucket, audio_path)
+        
+        transcript, audio_chunks = asyncio.run(transcribe_audio_google(bucket, audio_path))
 
         self.update_state(state='PROGRESS', meta={'status': 'Analyzing transcript'})
         analysis = analyze_text(transcript, prompt)
@@ -35,14 +36,12 @@ def download_and_process(self, url, prompt):
         }
 
     except Exception as e:
-        raise self.retry(exc=e)
-
+        logger.error(f"Task failed: {str(e)}")
 
 @task_success.connect
 def task_success_handler(sender=None, result=None, **kwargs):
     logger.info(f"Task {sender.name} completed successfully with result: {result}")
     try:
-        bucket = os.getenv('GCP_SPEECH_TO_TEXT_PROCESSING_BUCKET')
         file_path = result['result']['file_path']
         audio_chunks = result['result'].get('audio_chunks', [])
         # Delete the original MP3 and WAV files locally
@@ -62,11 +61,6 @@ def task_success_handler(sender=None, result=None, **kwargs):
                 os.remove(chunk)
                 logger.info(f"Deleted local chunk: {chunk}")
 
-        # Clean up GCS
-        if bucket:
-            for chunk in audio_chunks:
-                chunk_name = chunk.split('/')[-1]
-                delete_gcs_file(bucket, chunk_name)
 
     except Exception as e:
         logger.error(f"Error during cleanup: {str(e)}")
@@ -75,7 +69,6 @@ def task_success_handler(sender=None, result=None, **kwargs):
 def task_failure_handler(sender=None, task_id=None, exception=None, args=None, kwargs=None, traceback=None, einfo=None, **other_kwargs):
     logger.error(f"Task {sender.name} failed with exception: {exception}")
     try:
-        bucket = os.getenv('GCP_SPEECH_TO_TEXT_PROCESSING_BUCKET')
         file_path = kwargs.get('file_path')
         audio_chunks = kwargs.get('audio_chunks', [])
 
@@ -96,11 +89,6 @@ def task_failure_handler(sender=None, task_id=None, exception=None, args=None, k
                 os.remove(chunk)
                 logger.info(f"Deleted local chunk: {chunk}")
 
-        # Clean up GCS
-        if bucket:
-            for chunk in audio_chunks:
-                chunk_name = chunk.split('/')[-1]
-                delete_gcs_file(bucket, chunk_name)
 
     except Exception as e:
         logger.error(f"Error during cleanup: {str(e)}")
