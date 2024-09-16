@@ -60,7 +60,7 @@ async def transcribe_audio_chunk(audio_chunk):
 
     return transcript
 
-async def transcribe_audio_google(bucket_name, audio_file, chunk_length=30):
+async def transcribe_audio_google(audio_file, chunk_length=30):
     """Asynchronously transcribe long audio by splitting into chunks and transcribing each."""
     # Convert MP3 to WAV
     wav_file = convert_mp3_to_wav(audio_file)

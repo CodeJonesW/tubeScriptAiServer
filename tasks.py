@@ -23,7 +23,7 @@ def download_and_process(self, url, prompt):
 
         self.update_state(state='PROGRESS', meta={'status': 'Transcribing audio'})
         
-        transcript, audio_chunks = asyncio.run(transcribe_audio_google(bucket, audio_path))
+        transcript, audio_chunks = asyncio.run(transcribe_audio_google(audio_path))
 
         self.update_state(state='PROGRESS', meta={'status': 'Analyzing transcript'})
         analysis = analyze_text(transcript, prompt)

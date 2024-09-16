@@ -61,7 +61,7 @@ class TestAsyncTranscription(unittest.TestCase):
         mock_transcribe_chunk.side_effect = ['Transcript 1\n', 'Transcript 2\n']
 
         # Call the async function under test
-        transcript, chunks = asyncio.run(transcribe_audio_google('bucket', 'file.mp3'))
+        transcript, chunks = asyncio.run(transcribe_audio_google('file.mp3'))
 
         # Assert that the transcript is combined correctly
         self.assertEqual(transcript, 'Transcript 1\nTranscript 2\n')
@@ -85,7 +85,7 @@ class TestAsyncTranscription(unittest.TestCase):
 
         # Test if the transcribe_audio_google raises an exception when a chunk fails
         with self.assertRaises(Exception):
-            asyncio.run(transcribe_audio_google('bucket', 'file.mp3'))
+            asyncio.run(transcribe_audio_google('file.mp3'))
 
         # Ensure that the conversion and splitting functions were called once
         mock_convert_mp3.assert_called_once_with('file.mp3')
