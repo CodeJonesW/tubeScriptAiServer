@@ -6,9 +6,7 @@ class TestTaskHandler(unittest.TestCase):
 
     @patch('os.remove')
     @patch('os.path.exists', return_value=True)
-    @patch('tasks.delete_gcs_file') 
-    @patch('os.getenv', return_value='your_gcp_bucket')
-    def test_task_success_handler(self, mock_getenv, mock_delete_gcs, mock_os_path_exists, mock_os_remove):
+    def test_task_success_handler(self, mock_os_path_exists, mock_os_remove):
         # Mock the result object
         result = {
             'result': {
@@ -40,9 +38,7 @@ class TestTaskHandler(unittest.TestCase):
     
     @patch('os.remove')
     @patch('os.path.exists', return_value=True)  # Mock os.path.exists to always return True
-    @patch('tasks.delete_gcs_file')  # Patch where it's used in the tasks module
-    @patch('os.getenv', return_value='your_gcp_bucket')  # Mock os.getenv to return the correct bucket name
-    def test_task_failure_handler(self, mock_getenv, mock_delete_gcs, mock_os_path_exists, mock_os_remove):
+    def test_task_failure_handler(self, mock_os_path_exists, mock_os_remove):
         # Mock the sender and exception
         mock_sender = MagicMock()
         mock_sender.name = 'download_and_process'

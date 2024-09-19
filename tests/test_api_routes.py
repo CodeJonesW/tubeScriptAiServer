@@ -7,7 +7,8 @@ class TestApiRoutes(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Set up a test client and test database."""
-        cls.app = create_app()  # Create the app using the factory function
+        app, celery = create_app()  # Create the app using the factory function
+        cls.app = app
         cls.app.config['TESTING'] = True
         cls.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test_users.db'  # Use a test database
         cls.app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
