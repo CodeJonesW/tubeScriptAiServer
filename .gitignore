@@ -8,8 +8,18 @@ venv/
 # Environment variables
 .env
 
-# db instance
+# Ignore the instance folder
 instance/
+# Ignore SQLite database files
+*.db
+# Ignore database dumps or backups
+*.dump
+*.sql
+
+# Add any other system-generated or unnecessary files
+venv/
+__pycache__/
+*.log
 
 # Redis
 dump.rdb
