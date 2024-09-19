@@ -1,45 +1,61 @@
 from celery import Celery
 from celery.signals import task_success, task_failure
-from services.youtube_service import download_audio
+from services.youtube_service import download_audio, get_audio_duration
 from services.google_transcription_service import delete_gcs_file, transcribe_audio_google
 from google.cloud import storage
 from services.analyze_text_service import analyze_text
 import os
 import logging
 import asyncio
+from db.models import User, db  # Import from models.py
 
 celery = Celery('tasks', broker='redis://localhost:6379/0')
 logger = logging.getLogger(__name__)
 
+
+
 @celery.task(bind=True)
-def download_and_process(self, url, prompt):
+def download_and_process(self, url, prompt, user_id):
     """Handles downloading, transcribing, and analyzing the video asynchronously."""
     try:
+        # Get the user from the database
+        user = User.query.get(user_id)
+        if not user:
+            raise Exception("User not found")
+
         self.update_state(state='PROGRESS', meta={'status': 'Downloading video'})
-        try:
-            audio_path = download_audio(url)
-        except Exception as e:
-            raise Exception(f"Error downloading audio: {str(e)}")
+        audio_path = download_audio(url)
 
         self.update_state(state='PROGRESS', meta={'status': 'Transcribing audio'})
-        
-        transcript, audio_chunks = asyncio.run(transcribe_audio_google(audio_path))
+        bucket = os.getenv('GCP_SPEECH_TO_TEXT_PROCESSING_BUCKET')
+        transcript, audio_chunks = asyncio.run(transcribe_audio_google(bucket, audio_path))
+
+        # Calculate transcription time used (in minutes)
+        transcription_time_used = get_audio_duration(audio_path) / 60  # Assuming get_audio_duration returns seconds
+        user.free_minutes -= int(transcription_time_used)
+        if user.free_minutes < 0:
+            user.free_minutes = 0
+        db.session.commit()
 
         self.update_state(state='PROGRESS', meta={'status': 'Analyzing transcript'})
         analysis = analyze_text(transcript, prompt)
-
+        print('returning success obj')
         return {
             'status': 'Completed',
             'result': {
                 'transcript': transcript,
                 'analysis': analysis,
                 'file_path': audio_path,
-                'audio_chunks': audio_chunks  # Include chunk paths for cleanup
+                'audio_chunks': audio_chunks,
+                'free_minutes_left': user.free_minutes,
             }
         }
 
     except Exception as e:
         logger.error(f"Task failed: {str(e)}")
+        # Optionally retry the task if needed
+        # raise self.retry(exc=e)
+
 
 @task_success.connect
 def task_success_handler(sender=None, result=None, **kwargs):

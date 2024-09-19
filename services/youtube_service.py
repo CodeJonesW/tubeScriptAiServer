@@ -27,3 +27,8 @@ def download_audio(youtube_url):
         raise FileNotFoundError("Audio file could not be created")
 
     return audio_file
+
+def get_audio_duration(audio_file):
+    probe = ffmpeg.probe(audio_file)
+    audio_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'audio'), None)
+    return float(audio_stream['duration'])
