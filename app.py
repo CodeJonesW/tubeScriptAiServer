@@ -9,6 +9,7 @@ from db.models import db, User
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
 from werkzeug.security import generate_password_hash, check_password_hash
 
+
 logger = logging.getLogger(__name__)
 
 def create_app():
@@ -23,7 +24,7 @@ def create_app():
         CELERY_RESULT_BACKEND=os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0'),
         SQLALCHEMY_DATABASE_URI='sqlite:///users.db',
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
-        JWT_SECRET_KEY=os.getenv('JWT_SECRET_KEY', 'your-secret-key')  # Use env var or default secret
+        JWT_SECRET_KEY=os.getenv('JWT_SECRET_KEY', 'your-secret-key')
     )
 
     # Initialize extensions
@@ -37,7 +38,7 @@ def create_app():
     with app.app_context():
         db.create_all()
 
-    return app
+    return app, celery
 
 # Define routes for the Flask app
 def register_routes(app):
@@ -147,7 +148,7 @@ def register_routes(app):
     return app
 
 # Initialize the app and register the routes
-app = create_app()
+app, celery = create_app()
 register_routes(app)
 
 if __name__ == '__main__':

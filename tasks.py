@@ -1,60 +1,59 @@
-from celery import Celery
-from celery.signals import task_success, task_failure
-from services.youtube_service import download_audio, get_audio_duration
-from services.google_transcription_service import delete_gcs_file, transcribe_audio_google
-from google.cloud import storage
-from services.analyze_text_service import analyze_text
 import os
 import logging
 import asyncio
-from db.models import User, db  # Import from models.py
+from celery.signals import task_success, task_failure
+from services.youtube_service import download_audio, get_audio_duration
+from services.google_transcription_service import transcribe_audio_google
+from services.analyze_text_service import analyze_text
+from db.models import User, db  
+from celery import shared_task  # Import shared_task instead of using the celery instance directly
 
-celery = Celery('tasks', broker='redis://localhost:6379/0')
 logger = logging.getLogger(__name__)
 
 
 
-@celery.task(bind=True)
+logger = logging.getLogger(__name__)
+
+@shared_task(bind=True)
 def download_and_process(self, url, prompt, user_id):
     """Handles downloading, transcribing, and analyzing the video asynchronously."""
     try:
-        # Get the user from the database
-        user = User.query.get(user_id)
-        if not user:
-            raise Exception("User not found")
+        # You can still access the Flask app context from within the task using the same approach
+        from app import app  # Import the app here
+        with app.app_context():
+            # Get the user from the database
+            user = User.query.get(user_id)
+            if not user:
+                raise Exception("User not found")
 
-        self.update_state(state='PROGRESS', meta={'status': 'Downloading video'})
-        audio_path = download_audio(url)
+            self.update_state(state='PROGRESS', meta={'status': 'Downloading video'})
+            audio_path = download_audio(url)
 
-        self.update_state(state='PROGRESS', meta={'status': 'Transcribing audio'})
-        bucket = os.getenv('GCP_SPEECH_TO_TEXT_PROCESSING_BUCKET')
-        transcript, audio_chunks = asyncio.run(transcribe_audio_google(bucket, audio_path))
+            self.update_state(state='PROGRESS', meta={'status': 'Transcribing audio'})
+            transcript, audio_chunks = asyncio.run(transcribe_audio_google(audio_path))
 
-        # Calculate transcription time used (in minutes)
-        transcription_time_used = get_audio_duration(audio_path) / 60  # Assuming get_audio_duration returns seconds
-        user.free_minutes -= int(transcription_time_used)
-        if user.free_minutes < 0:
-            user.free_minutes = 0
-        db.session.commit()
+            # Calculate transcription time used (in minutes)
+            transcription_time_used = get_audio_duration(audio_path) / 60
+            user.free_minutes -= int(transcription_time_used)
+            if user.free_minutes < 0:
+                user.free_minutes = 0
+            db.session.commit()
 
-        self.update_state(state='PROGRESS', meta={'status': 'Analyzing transcript'})
-        analysis = analyze_text(transcript, prompt)
-        print('returning success obj')
-        return {
-            'status': 'Completed',
-            'result': {
-                'transcript': transcript,
-                'analysis': analysis,
-                'file_path': audio_path,
-                'audio_chunks': audio_chunks,
-                'free_minutes_left': user.free_minutes,
+            self.update_state(state='PROGRESS', meta={'status': 'Analyzing transcript'})
+            analysis = analyze_text(transcript, prompt)
+
+            return {
+                'status': 'Completed',
+                'result': {
+                    'transcript': transcript,
+                    'analysis': analysis,
+                    'file_path': audio_path,
+                    'audio_chunks': audio_chunks,
+                    'free_minutes_left': user.free_minutes,
+                }
             }
-        }
-
     except Exception as e:
         logger.error(f"Task failed: {str(e)}")
-        # Optionally retry the task if needed
-        # raise self.retry(exc=e)
 
 
 @task_success.connect
