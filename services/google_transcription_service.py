@@ -8,7 +8,6 @@ import math
 
 logger = logging.getLogger(__name__)
 
-# Set environment variable for Google credentials
 os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 
 # ThreadPoolExecutor for running blocking IO operations

@@ -15,10 +15,8 @@ logger = logging.getLogger(__name__)
 def create_app():
     app = Flask(__name__)
 
-    # Load environment variables
     load_dotenv()
 
-    # Flask configuration
     app.config.update(
         CELERY_BROKER_URL=os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0'),
         CELERY_RESULT_BACKEND=os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0'),
@@ -27,22 +25,18 @@ def create_app():
         JWT_SECRET_KEY=os.getenv('JWT_SECRET_KEY', 'your-secret-key')
     )
 
-    # Initialize extensions
-    db.init_app(app)  # Initialize SQLAlchemy
+    db.init_app(app) 
     jwt = JWTManager(app)
     CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
 
-    celery = make_celery(app)  # Celery configuration
+    celery = make_celery(app) 
 
-    # Create the database tables
     with app.app_context():
         db.create_all()
 
     return app, celery
 
-# Define routes for the Flask app
 def register_routes(app):
-    # User registration route with password hashing
     @app.route('/register', methods=['POST'])
     def register():
         username = request.json.get('username')
@@ -54,17 +48,14 @@ def register_routes(app):
         if User.query.filter_by(username=username).first():
             return jsonify({"message": "User already exists"}), 400
 
-        # Hash the password before storing it
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
 
-        # Store the hashed password in the database
         new_user = User(username=username, password=hashed_password, free_minutes=10)
         db.session.add(new_user)
         db.session.commit()
 
         return jsonify({"message": "User registered successfully"}), 201
     
-    # User login route with password check
     @app.route('/login', methods=['POST'])
     def login():
         username = request.json.get('username')
@@ -73,17 +64,14 @@ def register_routes(app):
         if not username or not password:
             return jsonify({"message": "Username and password are required"}), 400
 
-        # Find the user by username
         user = User.query.filter_by(username=username).first()
 
         if not user or not check_password_hash(user.password, password):
             return jsonify({"message": "Invalid credentials"}), 401
 
-        # If credentials are correct, generate access token
         access_token = create_access_token(identity={'username': user.username})
         return jsonify(access_token=access_token), 200
 
-    # Protected route for processing video (only accessible if logged in)
     @app.route('/process', methods=['POST'])
     @jwt_required()
     def process_video():
@@ -99,7 +87,6 @@ def register_routes(app):
         if not url or not prompt:
             return jsonify({'error': 'YouTube URL and prompt are required'}), 400
 
-        # Enqueue the task
         task = download_and_process.apply_async(args=[url, prompt, user.id])
 
         return jsonify({'task_id': task.id}), 202
@@ -126,13 +113,12 @@ def register_routes(app):
         else:
             response = {
                 'state': task.state,
-                'status': str(task.info)  # Task error details in case of failure
+                'status': str(task.info) 
             }
 
         return jsonify(response)
 
 
-    # Protected profile route to view remaining free minutes
     @app.route('/profile', methods=['GET'])
     @jwt_required()
     def profile():
@@ -147,7 +133,6 @@ def register_routes(app):
     
     return app
 
-# Initialize the app and register the routes
 app, celery = create_app()
 register_routes(app)
 
