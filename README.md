@@ -29,7 +29,6 @@ Create a .env file with the following environment variables:
 ```bash
     CELERY_BROKER_URL=redis://localhost:6379/0
     CELERY_RESULT_BACKEND=redis://localhost:6379/0
-    GCP_SPEECH_TO_TEXT_PROCESSING_BUCKET=your-gcp-bucket-name
     JWT_SECRET_KEY=your-secret-key
     OPENAI_API_KEY=your-openai-api-key
 ```
@@ -39,7 +38,7 @@ Create a .env file with the following environment variables:
 The Flask server handles user authentication, requests for processing, and status polling.
 
 ```bash
-    python3 app.py
+    python3 main.py
 ```
 
 ### 4. Start Celery worker

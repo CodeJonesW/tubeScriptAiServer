@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch, MagicMock
-from app import create_app, db, register_routes
+from main import create_app, db, register_routes
 
 class TestApiRoutes(unittest.TestCase):
 
@@ -12,6 +12,7 @@ class TestApiRoutes(unittest.TestCase):
         cls.app.config['TESTING'] = True
         cls.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test_users.db'  # Use a test database
         cls.app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+        cls.app.config['JWT_SECRET_KEY'] = 'test-secret-key'
 
         register_routes(cls.app)  # Register the routes for testing
 

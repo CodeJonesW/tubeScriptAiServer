@@ -8,26 +8,32 @@ from tasks import download_and_process
 from db.models import db, User
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
 from werkzeug.security import generate_password_hash, check_password_hash
+from utils.get_env_variables import load_secrets
 
+secrets = load_secrets()
 
 logger = logging.getLogger(__name__)
 
 def create_app():
     app = Flask(__name__)
+    logger.info('createing app - main.py')
+    logger.info(f"secrets: {secrets['CELERY_BROKER_URL']}")
+    logger.info(f"secrets: {secrets['CELERY_RESULT_BACKEND']}")
 
     load_dotenv()
 
     app.config.update(
-        CELERY_BROKER_URL=os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0'),
-        CELERY_RESULT_BACKEND=os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0'),
-        SQLALCHEMY_DATABASE_URI='sqlite:///users.db',
-        SQLALCHEMY_TRACK_MODIFICATIONS=False,
-        JWT_SECRET_KEY=os.getenv('JWT_SECRET_KEY', 'your-secret-key')
+        CELERY_BROKER_URL=secrets['CELERY_BROKER_URL'],
+        CELERY_RESULT_BACKEND=secrets['CELERY_RESULT_BACKEND'],
+        SQLALCHEMY_DATABASE_URI=secrets['SQLALCHEMY_DATABASE_URI'],
+        SQLALCHEMY_TRACK_MODIFICATIONS=secrets['SQLALCHEMY_TRACK_MODIFICATIONS'],
+        JWT_SECRET_KEY=secrets['JWT_SECRET_KEY'],
     )
 
     db.init_app(app) 
     jwt = JWTManager(app)
-    CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
+
+    CORS(app, resources={r"/*": {"origins": secrets['FRONTEND_URL']}})
 
     celery = make_celery(app) 
 
@@ -75,8 +81,10 @@ def register_routes(app):
     @app.route('/process', methods=['POST'])
     @jwt_required()
     def process_video():
+        logger.info('Processing video')
         current_user = get_jwt_identity()
         user = User.query.filter_by(username=current_user['username']).first()
+        logger.info('User found in db')
 
         if user.free_minutes <= 0:
             return jsonify({'error': 'You have exhausted your free transcription time. Please purchase more time.'}), 403
@@ -136,5 +144,5 @@ def register_routes(app):
 app, celery = create_app()
 register_routes(app)
 
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=8080)

@@ -28,3 +28,8 @@ dump.rdb
 .idea/
 .vscode/
 .DS_Store
+
+app.yaml
+
+worker.yaml
+

@@ -8,7 +8,6 @@ import math
 
 logger = logging.getLogger(__name__)
 
-os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 
 # ThreadPoolExecutor for running blocking IO operations
 executor = ThreadPoolExecutor(max_workers=32)

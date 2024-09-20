@@ -1,11 +1,14 @@
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
+from utils.get_env_variables import load_secrets
 
 load_dotenv()
 
+secrets = load_secrets()
+
 client = OpenAI(
-    api_key= os.getenv("OPENAI_API_KEY"),
+    api_key= secrets['OPEN_AI_API_KEY'],
 )
 import logging
 
@@ -13,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def analyze_text(transcript, user_prompt):
+    logger.info('Begin ----- analyze_text')
     """Analyze the transcript based on the user's prompt using OpenAI GPT."""
     try:
         prompt = f"{user_prompt}\n\nTranscript:\n{transcript}"
