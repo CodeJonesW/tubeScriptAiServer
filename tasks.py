@@ -55,6 +55,7 @@ def download_and_process(self, url, prompt, user_id):
             }
     except Exception as e:
         logger.error(f"Task failed: {str(e)}")
+        raise e
 
 
 @task_success.connect
