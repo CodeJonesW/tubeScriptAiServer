@@ -103,12 +103,6 @@ def register_routes(app):
     @jwt_required()
     def task_status(task_id):
         task = download_and_process.AsyncResult(task_id)
-        if task.info is None:
-            response = {
-                'state': 'NOT FOUND',
-                'status': 'Task not found'
-            }
-            return jsonify(response)
         
         logger.info(f'Task: {task}\nTask State: {task.state}\nTask Info: {task.info}')
 
@@ -118,18 +112,19 @@ def register_routes(app):
                 'status': 'Pending...'
             }
 
-        elif task.state != 'FAILURE':
+        elif task.state == 'FAILURE':
+            response = {
+                'state': task.state,
+                'status': str(task.info) 
+            }
+            
+        else:
             response = {
                 'state': task.state,
                 'result': task.info.get('result', ''),
                 'status': task.info.get('status', 'Processing...'),
             }
             
-        else:
-            response = {
-                'state': task.state,
-                'status': str(task.info) 
-            }
 
         return jsonify(response)
 

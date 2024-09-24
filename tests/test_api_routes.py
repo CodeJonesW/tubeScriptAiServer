@@ -119,7 +119,7 @@ class TestApiRoutes(unittest.TestCase):
         """Test /status/<task_id> route with a task that is pending and authentication."""
         mock_task = MagicMock()
         mock_task.state = 'PENDING'
-        mock_task.info = None
+        mock_task.info = None 
         mock_async_result.return_value = mock_task
 
         # Simulate GET request to /status/test_task_id with JWT headers
