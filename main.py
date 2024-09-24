@@ -103,6 +103,7 @@ def register_routes(app):
     @jwt_required()
     def task_status(task_id):
         task = download_and_process.AsyncResult(task_id)
+        logger.info(f'Task status: {task}')
         if task is None:
             response = {
                 'state': 'NOT FOUND',

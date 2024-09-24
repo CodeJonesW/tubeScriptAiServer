@@ -3,7 +3,7 @@ import ffmpeg
 import os
 
 def download_audio(youtube_url):
-    output_dir = "tmp/downloads/"
+    output_dir = "../tmp/downloads"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     
