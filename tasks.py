@@ -23,11 +23,7 @@ def download_and_process(self, url, prompt, user_id):
                 raise Exception("User not found")
 
             self.update_state(state='PROGRESS', meta={'status': 'Downloading video'})
-            try:
-                audio_path = download_audio(url)
-            except Exception as e:
-                raise e
-
+            audio_path = download_audio(url)
             self.update_state(state='PROGRESS', meta={'status': 'Transcribing audio'})
             transcript, audio_chunks = asyncio.run(transcribe_audio_google(audio_path))
 
