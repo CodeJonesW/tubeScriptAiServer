@@ -44,7 +44,7 @@ The Flask server handles user authentication, requests for processing, and statu
 ### 4. Start Celery worker
 
 ```bash
-    celery -A app.celery worker --loglevel=info
+    celery -A main.celery worker --loglevel=info
 ```
 
 ### Run Tests
