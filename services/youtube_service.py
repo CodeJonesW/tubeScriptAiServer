@@ -34,7 +34,7 @@ def download_audio(youtube_url):
         return audio_file
     except Exception as e:
         logger.error(f"Error downloading audio: {str(e)}")
-        raise e
+        raise Exception(str(e))
 
 def get_audio_duration(audio_file):
     probe = ffmpeg.probe(audio_file)
