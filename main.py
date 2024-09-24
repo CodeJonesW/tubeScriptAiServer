@@ -23,8 +23,8 @@ def create_app():
     load_dotenv()
 
     app.config.update(
-        CELERY_BROKER_URL=secrets['CELERY_BROKER_URL'],
-        CELERY_RESULT_BACKEND=secrets['CELERY_RESULT_BACKEND'],
+        CELERY_broker_url=secrets['CELERY_BROKER_URL'],
+        result_backend=secrets['CELERY_RESULT_BACKEND'],
         SQLALCHEMY_DATABASE_URI=secrets['SQLALCHEMY_DATABASE_URI'],
         SQLALCHEMY_TRACK_MODIFICATIONS=secrets['SQLALCHEMY_TRACK_MODIFICATIONS'],
         JWT_SECRET_KEY=secrets['JWT_SECRET_KEY'],
