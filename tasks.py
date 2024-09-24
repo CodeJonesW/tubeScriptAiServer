@@ -8,9 +8,6 @@ from services.analyze_text_service import analyze_text
 from db.models import User, db  
 from celery import shared_task  # Import shared_task instead of using the celery instance directly
 
-logger = logging.getLogger(__name__)
-
-
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +28,7 @@ def download_and_process(self, url, prompt, user_id):
             try:
                 audio_path = download_audio(url)
             except Exception as e:
-                return {'status': 'Failed', 'error': e}
+                raise e
 
             self.update_state(state='PROGRESS', meta={'status': 'Transcribing audio'})
             transcript, audio_chunks = asyncio.run(transcribe_audio_google(audio_path))
