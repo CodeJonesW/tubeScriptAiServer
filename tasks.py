@@ -16,10 +16,8 @@ def download_and_process(self, url, prompt, user_id):
     logger.info('Starting task ---- download_and_process')
     """Handles downloading, transcribing, and analyzing the video asynchronously."""
     try:
-        # You can still access the Flask app context from within the task using the same approach
-        from main import app  # Import the app here
+        from main import app
         with app.app_context():
-            # Get the user from the database
             user = User.query.get(user_id)
             if not user:
                 raise Exception("User not found")
