@@ -19,13 +19,18 @@ def analyze_text(transcript, user_prompt):
     logger.info('Begin ----- analyze_text')
     """Analyze the transcript based on the user's prompt using OpenAI GPT."""
     try:
-        prompt = f"{user_prompt}\n\nTranscript:\n{transcript}"
+        if user_prompt == 'summarize':
+            prompt = f'write me a detailed blog article about the follow text. Expand the length of the blog relative to the length of the content. Be detail oriented.
+                    Begin:
+                    {transcript}',
+        else:
+            prompt = f"Follow this command {user_prompt} in regards to the following transcript\n\nTranscript:\n{transcript}"
 
         chat_completion = client.chat.completions.create(
             messages=[
                 {
                     "role": "user",
-                    "content": f'apply this command: {user_prompt}, to this text: {transcript}',
+                    "content": prompt
                 }
             ],
             model="gpt-3.5-turbo",
