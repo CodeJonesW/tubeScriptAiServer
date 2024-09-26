@@ -22,6 +22,10 @@ This project is a web service that allows users to upload YouTube video URLs and
 
 Download a google application credentials file from the Google Cloud Console and save it in location of choice. GCP Speech-to-Text API should be enabled.
 
+### 3. Provide OpenAI API Key
+
+Get an API key from OpenAI and save it.
+
 ### 3. Set Environment Variables
 
 Create a .env file with the following environment variables:
