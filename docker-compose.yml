@@ -1,0 +1,49 @@
+version: "3"
+services:
+  postgres:
+    image: postgres:14
+    restart: always
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    image: codejonesw/tubescript-ai-backend:latest
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+    environment:
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - SQLALCHEMY_DATABASE_URI=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+
+  frontend:
+    image: codejonesw/tubescript-ai-frontend:latest
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+  celery-worker:
+    image: codejonesw/tubescriptai-worker:latest
+    depends_on:
+      - redis
+    environment:
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - SQLALCHEMY_DATABASE_URI=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - GOOGLE_APPLICATION_CREDENTIALS=/tubescript_backend/service-account-key.json
+    volumes:
+      - ${PATH_TO_GOOGLE_APPLICATION_CREDENTIALS}
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data: # Declare the volume here

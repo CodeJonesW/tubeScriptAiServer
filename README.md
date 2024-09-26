@@ -2,6 +2,8 @@
 
 This project is a web service that allows users to upload YouTube video URLs and receive transcripts along with AI-based analysis of the video content. It integrates with Google Cloud Speech-to-Text for audio transcription and OpenAI for text analysis. The system supports user authentication and limits the free transcription minutes for each user.
 
+---
+
 ## Features
 
 - **User Authentication**: Users can register and login using JWT-based authentication.
@@ -10,55 +12,39 @@ This project is a web service that allows users to upload YouTube video URLs and
 - **Task Management**: Transcription and analysis are handled asynchronously using Celery.
 - **Free Time Limitation**: Users are granted a limited number of free minutes for transcription, which is deducted as they use the service.
 
+---
+
 ## Setup and Installation
 
-### 1. Install Dependencies
+### 1. Make sure you have Docker and Docker Compose installed
 
-Ensure that you have Python 3.9+ installed. Clone the repository, then create and activate a virtual environment:
+### 2. Provide Google Cloud credentials
 
-```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
+Download a google application credentials file from the Google Cloud Console and save it in location of choice. GCP Speech-to-Text API should be enabled.
 
-### 2. Set Environment Variables
+### 3. Set Environment Variables
 
 Create a .env file with the following environment variables:
 
 ```bash
-    CELERY_BROKER_URL=redis://localhost:6379/0
-    CELERY_RESULT_BACKEND=redis://localhost:6379/0
     JWT_SECRET_KEY=your-secret-key
     OPENAI_API_KEY=your-openai-api-key
+    POSTGRES_DB=database
+    POSTGRES_USER=user
+    POSTGRES_PASSWORD=password
+    PATH_TO_GOOGLE_APPLICATION_CREDENTIALS=path-to-google-credentials.json
 ```
 
-### 3. Install and Start Redis Server
+### 4. Run Compoose
 
-If redis is already installed on your computer use the following command to start the server:
+- docker compose up
 
-```bash
-    redis-server
-```
+---
 
-Otherwise install redis on your machine [docs](https://redis.io/docs/latest/operate/oss_and_stack/install/)
-
-### 4. Start Flask Server
-
-The Flask server handles user authentication, requests for processing, and status polling.
-
-```bash
-    python3 main.py
-```
-
-### 5.. Start Celery worker
-
-```bash
-    celery -A main.celery worker --loglevel=info
-```
-
-### Run Tests
+### Run Unit Tests
 
 ```bash
     python run_tests.py
 ```
+
+---
