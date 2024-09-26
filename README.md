@@ -33,7 +33,17 @@ Create a .env file with the following environment variables:
     OPENAI_API_KEY=your-openai-api-key
 ```
 
-### 3. Start Flask Server
+### 3. Install and Start Redis Server
+
+If redis is already installed on your computer use the following command to start the server:
+
+```bash
+    redis-server
+```
+
+Otherwise install redis on your machine [docs](https://redis.io/docs/latest/operate/oss_and_stack/install/)
+
+### 4. Start Flask Server
 
 The Flask server handles user authentication, requests for processing, and status polling.
 
@@ -41,7 +51,7 @@ The Flask server handles user authentication, requests for processing, and statu
     python3 main.py
 ```
 
-### 4. Start Celery worker
+### 5.. Start Celery worker
 
 ```bash
     celery -A main.celery worker --loglevel=info
