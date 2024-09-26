@@ -20,7 +20,7 @@ def analyze_text(transcript, user_prompt):
     """Analyze the transcript based on the user's prompt using OpenAI GPT."""
     try:
         if user_prompt == 'summarize':
-            prompt = f'write me a detailed summary about the following text and expand the length of the summary relative to the length of the text. --- Begin: {transcript}'
+            prompt = f'write a detailed summary of the following text: {transcript}'
         else:
             prompt = f"{user_prompt}: {transcript}"
 
