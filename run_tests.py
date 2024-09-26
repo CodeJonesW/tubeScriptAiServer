@@ -1,6 +1,11 @@
 # run_tests.py
 import unittest
 import sys
+import logging
+
+# Configure logging to show messages at DEBUG level and above
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger()
 
 if __name__ == '__main__':
     try:
@@ -14,7 +19,7 @@ if __name__ == '__main__':
             print("Discovering and running all tests in the 'tests' folder...")
             suite = unittest.TestLoader().discover('tests')
 
-        test_runner = unittest.TextTestRunner(verbosity=2)
+        test_runner = unittest.TextTestRunner(verbosity=2, buffer=False, failfast=True)
         result = test_runner.run(suite)
         
         if result.wasSuccessful():

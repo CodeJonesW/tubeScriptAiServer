@@ -1,6 +1,10 @@
 import unittest
 from unittest.mock import patch, MagicMock
+import logging
+import yt_dlp
 from main import create_app, db, register_routes
+
+logger = logging.getLogger(__name__)
 
 class TestApiRoutes(unittest.TestCase):
 
@@ -75,6 +79,8 @@ class TestApiRoutes(unittest.TestCase):
             'url': 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
             'prompt': 'Summarize the video'
         }, headers=self.get_headers())
+
+        logger.debug('HERE', response.json)
 
         # Assert response code and JSON content
         self.assertEqual(response.status_code, 202)
@@ -159,6 +165,46 @@ class TestApiRoutes(unittest.TestCase):
 
         # Assert response code for missing authentication
         self.assertEqual(response.status_code, 401)
+    
+    @patch('yt_dlp.YoutubeDL')
+    def test_process_video_too_long(self, mock_yt_dlp):
+        """Test /process route with a video that exceeds the duration limit."""
+        
+        # Mock the YoutubeDL instance
+        mock_ydl_instance = MagicMock()
+        mock_ydl_instance.extract_info.return_value = {
+            'duration': 2000  # 33 minutes, exceeding the allowed limit of 30 minutes
+        }
+        mock_yt_dlp.return_value.__enter__.return_value = mock_ydl_instance
+
+        # Simulate POST request to /process with JWT headers
+        response = self.client.post('/process', json={
+            'url': 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            'prompt': 'Summarize the video'
+        }, headers=self.get_headers())
+
+        # Assert response code and JSON content
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json, {'error': 'Video is too long. Maximum allowed length is 30 minutes.'})
+
+    @patch('yt_dlp.YoutubeDL')
+    def test_process_video_invalid_url(self, mock_yt_dlp):
+        """Test /process route with an invalid or non-retrievable video URL."""
+        
+        # Mock the YoutubeDL instance to raise a DownloadError
+        mock_ydl_instance = MagicMock()
+        mock_ydl_instance.extract_info.side_effect = yt_dlp.utils.DownloadError("Unable to retrieve video information")
+        mock_yt_dlp.return_value.__enter__.return_value = mock_ydl_instance
+
+        # Simulate POST request to /process with JWT headers
+        response = self.client.post('/process', json={
+            'url': 'https://www.youtube.com/watch?v=invalid',
+            'prompt': 'Summarize the video'
+        }, headers=self.get_headers())
+
+        # Assert response code and JSON content
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json, {'error': 'Unable to retrieve video information. Please check the URL.'})
 
 if __name__ == '__main__':
     unittest.main()

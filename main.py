@@ -2,6 +2,7 @@ import os
 import logging
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+import yt_dlp
 from celery_config import make_celery
 from dotenv import load_dotenv
 from tasks import download_and_process
@@ -96,7 +97,6 @@ def register_routes(app):
             logger.info('Processing video')
             current_user = get_jwt_identity()
             user = User.query.filter_by(username=current_user['username']).first()
-            logger.info('User found in db')
 
             if user.free_minutes <= 0:
                 return jsonify({'error': 'You have exhausted your free transcription time. Please purchase more time.'}), 403
@@ -106,10 +106,21 @@ def register_routes(app):
 
             if not url or not prompt:
                 return jsonify({'error': 'YouTube URL and prompt are required'}), 400
-
-            task = download_and_process.apply_async(args=[url, prompt, user.id])
-
-            return jsonify({'task_id': task.id}), 202
+            
+            ydl_opts = {'quiet': True, 'skip_download': True}
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                try:
+                    info_dict = ydl.extract_info(url, download=False)
+                    duration = info_dict.get('duration', 0)
+                    
+                    if duration > 1800:  # 1800 seconds = 30 minutes
+                        return jsonify({'error': 'Video is too long. Maximum allowed length is 30 minutes.'}), 400
+                    
+                    task = download_and_process.apply_async(args=[url, prompt, user.id])
+                    return jsonify({'task_id': task.id}), 202
+                
+                except yt_dlp.utils.DownloadError:
+                    return jsonify({'error': 'Unable to retrieve video information. Please check the URL.'}), 400
         
         except Exception as e:
             logger.error(f"Error processing video: {str(e)}")
