@@ -8,7 +8,6 @@ import math
 
 logger = logging.getLogger(__name__)
 
-
 # ThreadPoolExecutor for running blocking IO operations
 executor = ThreadPoolExecutor(max_workers=32)
 
@@ -78,37 +77,6 @@ async def transcribe_audio_google(audio_file, chunk_length=30):
         transcript += result
 
     return transcript, audio_chunks
-
-def upload_to_gcs(bucket_name, audio_file):
-    """Upload the audio file to Google Cloud Storage."""
-    storage_client = storage.Client()
-    bucket = storage_client.bucket(bucket_name)
-    blob = bucket.blob(os.path.basename(audio_file))
-    blob.upload_from_filename(audio_file)
-
-    gcs_uri = f"gs://{bucket_name}/{blob.name}"
-    logger.info(f"Uploaded {audio_file} to {gcs_uri}")
-    return gcs_uri
-
-def delete_gcs_file(bucket_name, file_name):
-    """Deletes a file from the GCP bucket."""
-    storage_client = storage.Client()
-    bucket = storage_client.bucket(bucket_name)
-    blob = bucket.blob(file_name)
-
-    try:
-        blob.delete()
-        logger.info(f"Deleted {file_name} from bucket {bucket_name}.")
-    except Exception as e:
-        logger.error(f"Error deleting {file_name} from bucket {bucket_name}: {e}")
-
-def check_file_size(file_path, max_size_mb=9.99):
-    """Check if the file size exceeds the specified max size in MB."""
-    file_size = os.path.getsize(file_path)  # Size in bytes
-    max_size_bytes = max_size_mb * 1024 * 1024  # Convert MB to bytes
-    if file_size > max_size_bytes:
-        raise Exception(f"File size exceeds {max_size_mb}MB limit. File size: {file_size / (1024 * 1024):.2f}MB")
-    return True
 
 def convert_mp3_to_wav(mp3_file_path):
     """Convert MP3 at a given file path to WAV format."""
