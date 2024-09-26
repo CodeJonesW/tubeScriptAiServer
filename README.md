@@ -35,6 +35,12 @@ Create a .env file with the following environment variables:
     PATH_TO_GOOGLE_APPLICATION_CREDENTIALS=path-to-google-credentials.json
 ```
 
+### 4. Download Docker Images
+
+- docker pull codejonesw/tubescript-ai-backend
+- docker pull codejonesw/tubescript-ai-frontend
+- docker pull codejonesw/tubescript-ai-worker
+
 ### 4. Run Compoose
 
 - docker compose up
