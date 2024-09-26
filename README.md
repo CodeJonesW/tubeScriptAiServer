@@ -26,7 +26,7 @@ Download a google application credentials file from the Google Cloud Console and
 
 Get an API key from OpenAI and save it.
 
-### 3. Set Environment Variables
+### 4. Set Environment Variables
 
 Create a .env file with the following environment variables:
 
@@ -39,13 +39,13 @@ Create a .env file with the following environment variables:
     PATH_TO_GOOGLE_APPLICATION_CREDENTIALS=path-to-google-credentials.json
 ```
 
-### 4. Download Docker Images
+### 5. Download Docker Images
 
 - docker pull codejonesw/tubescript-ai-backend
 - docker pull codejonesw/tubescript-ai-frontend
 - docker pull codejonesw/tubescript-ai-worker
 
-### 4. Run Compoose
+### 6. Run Compoose
 
 - docker compose up
 
